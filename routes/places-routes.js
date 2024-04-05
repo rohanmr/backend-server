@@ -15,7 +15,11 @@ router.post(
   ],
   placeController.createPlace
 );
-router.put("/:pid", placeController.updatePlace);
+router.put(
+  "/:pid",
+  [check("title").not().isEmpty(), check("description").isLength({ min: 5 })],
+  placeController.updatePlace
+);
 router.delete("/:pid", placeController.deletePlace);
 
 module.exports = router;

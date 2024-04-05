@@ -74,6 +74,10 @@ const createPlace = (req, res, next) => {
 };
 
 const updatePlace = (req, res, next) => {
+  const error = validationResult(req);
+  if (!error.isEmpty()) {
+    throw new HttpError("Inputs are not Valid Or Pleas Enter information", 422);
+  }
   const { title, description } = req.body;
   const placeId = req.params.pid;
   const updatedPlace = { ...Dummy_Data.find((p) => p.id === placeId) };
@@ -86,6 +90,9 @@ const updatePlace = (req, res, next) => {
 
 const deletePlace = (req, res, next) => {
   const placeId = req.params.pid;
+  if (!Dummy_Data.find((p) => p.id === placeId)) {
+    throw new HttpError("The provided place id is not found", 404);
+  }
   Dummy_Data = Dummy_Data.filter((p) => p.id !== placeId);
   res.status(200).json({ message: "Deleted Place successfully" });
 };
