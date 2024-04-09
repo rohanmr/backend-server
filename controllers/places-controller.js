@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
+const Place = require("../models/place");
 
 let Dummy_Data = [
   {
@@ -17,59 +18,70 @@ let Dummy_Data = [
   },
 ];
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
-
-  const place = Dummy_Data.find((p) => {
-    return p.id == placeId;
-  });
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch (err) {
+    const error = new HttpError("Provided Id is not found try again", 500);
+    return next(error);
+  }
 
   if (!place) {
-    throw new HttpError("A provided id is not a valid id for places", 404);
-    // const error = new HttpError(
-    //   "A provided id is not a valid id for places",
-    //   404
-    // );
-    // throw error;
+    const error = new HttpError(
+      "A provided id is not a valid id for places",
+      404
+    );
+    return next(error);
   }
-  res.status(200).json({ place });
+  res.status(200).json({ place: place.toObject({ getters: true }) });
 };
 
-const getPlacesUsersById = (req, res, next) => {
+const getPlacesUsersById = async (req, res, next) => {
   const userId = req.params.uid;
-  const places = Dummy_Data.filter((p) => {
-    return p.creator === userId;
-  });
+  let places;
+  try {
+    places = await Place.find({ creator: userId });
+  } catch (err) {
+    const error = new HttpError(
+      "Featching Places Faild! try again latter",
+      500
+    );
+    return next(error);
+  }
   if (!places || places.length == 0) {
     return next(
       new HttpError("A provided places id is not a valid user id", 404)
     );
-
-    // const error = new Error("A provided id is not a valid user id");
-    // error.code = 404;
-    // return res
-    //   .status(404)
-    //   .json({ message: "Provided Id is not valid User id" });
   }
-  res.status(200).json({ places });
+  res
+    .status(200)
+    .json({ places: places.map((place) => place.toObject({ getters: true })) });
 };
 
-const createPlace = (req, res, next) => {
+const createPlace = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
     throw new HttpError("Invalid inputs check Input data ", 422);
   }
-  const { title, description, coordinates, address, creator } = req.body;
+  const { title, description, address, creator } = req.body;
 
-  const createdPlace = {
-    id: uuidv4(),
+  const createdPlace = new Place({
     title,
     description,
-    location: coordinates,
-    address,
     creator,
-  };
-  Dummy_Data.push(createdPlace);
+    address,
+    image:
+      "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8",
+  });
+  try {
+    await createdPlace.save();
+  } catch (err) {
+    const error = new HttpError("Cant created place try again", 500);
+    return next(error);
+  }
+
   res.status(201).json({ place: createdPlace });
 };
 

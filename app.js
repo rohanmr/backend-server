@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const placesRoutes = require("./routes/places-routes");
 const usersRoutes = require("./routes/users-routes");
 const HttpError = require("./models/http-error");
+const mongoose = require("mongoose");
 
 const app = express();
 
@@ -26,4 +27,14 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(5000);
+mongoose
+  .connect(
+    "mongodb+srv://rohan:Dc8cPMJ6PCaurJEX@cluster0.g7qyvhs.mongodb.net/places?retryWrites=true&w=majority&appName=Cluster0"
+  )
+  .then(() => {
+    app.listen(5000);
+    console.log("DB Connected");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
