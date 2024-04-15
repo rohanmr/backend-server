@@ -85,19 +85,30 @@ const createPlace = async (req, res, next) => {
   res.status(201).json({ place: createdPlace });
 };
 
-const updatePlace = (req, res, next) => {
+const updatePlace = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
     throw new HttpError("Inputs are not Valid Or Pleas Enter information", 422);
   }
   const { title, description } = req.body;
   const placeId = req.params.pid;
-  const updatedPlace = { ...Dummy_Data.find((p) => p.id === placeId) };
-  const placeIndex = Dummy_Data.findIndex((p) => p.id === placeId);
-  updatedPlace.title = title;
-  updatedPlace.description = description;
-  Dummy_Data[placeIndex] = updatedPlace;
-  res.status(200).json(updatedPlace);
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch (err) {
+    const error = new HttpError("Could not find provided Place Id", 500);
+    return next(error);
+  }
+  place.title = title;
+  place.description = description;
+  try {
+    await place.save();
+  } catch (err) {
+    const error = new HttpError("Could Not Updat place", 500);
+    return next(error);
+  }
+
+  res.status(200).json({ place: place.toObject({ getters: true }) });
 };
 
 const deletePlace = (req, res, next) => {
