@@ -1,6 +1,7 @@
 const { v4: uuid } = require("uuid");
 const HttpError = require("../models/http-error");
 const { validationResult } = require("express-validator");
+const User = require("../models/user");
 
 const Dummy_Users = [
   {
@@ -15,26 +16,42 @@ const getUsers = (req, res, next) => {
   res.status(200).json({ user: Dummy_Users });
 };
 
-const signup = (req, res, next) => {
+const signup = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    throw new HttpError("Enter valid Data", 422);
+    return next(new HttpError("Enter valid Data", 422));
   }
-  const { name, email, password } = req.body;
+  const { name, email, password, places } = req.body;
 
-  const hasUser = Dummy_Users.find((u) => u.email === email);
-  if (hasUser) {
-    throw new HttpError("Could not create user, Email alredy exists", 422);
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new HttpError("Signup failed ! Please try again later.", 500);
+    return next(error);
   }
 
-  const createdUser = {
-    id: uuid(),
+  if (existingUser) {
+    const error = new HttpError("User alrady exsist", 422);
+    return next(error);
+  }
+
+  const createdUser = new User({
     name,
     email,
     password,
-  };
-  Dummy_Users.push(createdUser);
-  res.status(201).json({ user: createdUser });
+    image:
+      "https://unsplash.com/photos/shallow-focus-photography-of-woman-outdoor-during-day-rDEOVtE7vOs",
+    places,
+  });
+  try {
+    await createdUser.save();
+  } catch (err) {
+    const error = new HttpError("Signup failed try again later", 500);
+    return next(error);
+  }
+
+  res.status(201).json({ user: createdUser.toObject({ getters: true }) });
 };
 const login = (req, res, nest) => {
   const { email, password } = req.body;

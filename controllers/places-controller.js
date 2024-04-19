@@ -63,7 +63,7 @@ const getPlacesUsersById = async (req, res, next) => {
 const createPlace = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    throw new HttpError("Invalid inputs check Input data ", 422);
+    return next(new HttpError("Invalid inputs check Input data ", 422));
   }
   const { title, description, address, creator } = req.body;
 
@@ -88,7 +88,9 @@ const createPlace = async (req, res, next) => {
 const updatePlace = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    throw new HttpError("Inputs are not Valid Or Pleas Enter information", 422);
+    return next(
+      new HttpError("Inputs are not Valid Or Pleas Enter information", 422)
+    );
   }
   const { title, description } = req.body;
   const placeId = req.params.pid;
