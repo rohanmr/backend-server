@@ -29,7 +29,7 @@ const signup = async (req, res, next) => {
   if (!error.isEmpty()) {
     return next(new HttpError("Enter valid Data", 422));
   }
-  const { name, email, password, places } = req.body;
+  const { name, email, password } = req.body;
 
   let existingUser;
   try {
@@ -50,7 +50,7 @@ const signup = async (req, res, next) => {
     password,
     image:
       "https://unsplash.com/photos/shallow-focus-photography-of-woman-outdoor-during-day-rDEOVtE7vOs",
-    places,
+    places: [],
   });
   try {
     await createdUser.save();

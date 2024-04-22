@@ -1,8 +1,9 @@
 const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
-
+const mongoose = require("mongoose");
 const HttpError = require("../models/http-error");
 const Place = require("../models/place");
+const User = require("../models/user");
 
 let Dummy_Data = [
   {
@@ -75,10 +76,29 @@ const createPlace = async (req, res, next) => {
     image:
       "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8",
   });
+
+  let user;
+
   try {
-    await createdPlace.save();
+    user = await User.findById(creator);
   } catch (err) {
-    const error = new HttpError("Cant created place try again", 500);
+    const error = new HttpError("Creating Place failed, please try again", 500);
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError("Colud not find user for provided id ", 404);
+    return next(error);
+  }
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    user.places.push(createdPlace);
+    await user.save({ session: sess });
+    await createdPlace.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError("Can't created place try again", 500);
     return next(error);
   }
 
